@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <functional>
 #include <list>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -13,8 +14,8 @@ class BinomialHeap {
     struct Node {
         T value;
         std::size_t rank;
-        Node* sibling = nullptr;
-        Node* child = nullptr;
+        std::unique_ptr<Node> sibling;
+        std::unique_ptr<Node> child;
 
         explicit Node(T value, std::size_t rank)
             : value{std::move(value)},
@@ -23,34 +24,23 @@ class BinomialHeap {
         }
     };
 
-    std::list<Node*> roots;
+    std::list<std::unique_ptr<Node>> roots;
     Compare cmp{};
 
-    static void node_delete(Node* node)
+    [[nodiscard]] std::unique_ptr<Node> merge_roots(std::unique_ptr<Node> a,
+                                                    std::unique_ptr<Node> b)
     {
-        if (node == nullptr)
-            return;
-
-        node_delete(node->sibling);
-        node_delete(node->child);
-        delete node;
-    }
-
-    [[nodiscard]] Node* merge_roots(Node* a, Node* b)
-    {
-        assert(a != nullptr);
-        assert(b != nullptr);
         assert(a->rank == b->rank);
         assert(a->sibling == nullptr);
         assert(b->sibling == nullptr);
 
         if (cmp(b->value, a->value))
-            return merge_roots(b, a);
+            std::swap(a, b);
 
         // we now have root(a) <= root(b)
 
-        a->sibling = b->child;
-        b->child = a;
+        auto b_child_prev = std::exchange(b->child, std::move(a));
+        b->child->sibling = std::move(b_child_prev);
         ++b->rank;
 
         return b;
@@ -83,39 +73,16 @@ class BinomialHeap {
             if ((*it)->rank != (*next)->rank) {
                 ++it;
             } else {
-                *it = merge_roots(*it, *next);
+                *it = merge_roots(std::move(*it), std::move(*next));
                 roots.erase(next);
             }
         }
     }
 
 public:
-    BinomialHeap() = default;
-
-    BinomialHeap(BinomialHeap& other) = delete;
-
-    BinomialHeap(BinomialHeap&& other) noexcept
-    {
-        swap(other);
-    }
-
-    BinomialHeap& operator=(BinomialHeap& other) = delete;
-
-    BinomialHeap& operator=(BinomialHeap&& other) noexcept
-    {
-        swap(other);
-        return *this;
-    }
-
-    ~BinomialHeap()
-    {
-        for (auto root : roots)
-            node_delete(root);
-    }
-
     void insert(T value)
     {
-        roots.emplace_front(new Node{std::move(value), 1});
+        roots.emplace_front(std::make_unique<Node>(std::move(value), 1));
         collapse_roots();
     }
 
@@ -134,28 +101,26 @@ public:
     {
         auto max_it = find_max();
 
-        Node* max_root = *max_it;
-        T out = std::move(max_root->value);
-        roots.erase(max_it);
-
         auto it = roots.rbegin();
-        Node* cur_child = max_root->child;
-        delete std::exchange(max_root, nullptr);
+        auto cur_child = std::move((*max_it)->child);
+        T out = std::move((*max_it)->value);
+
+        roots.erase(max_it);
 
         while (it != roots.rend() && cur_child != nullptr) {
             if (cur_child->rank > (*it)->rank) {
-                Node* next = std::exchange(cur_child->sibling, nullptr);
-                roots.insert(it.base(), cur_child);
-                cur_child = next;
+                auto next = std::move(cur_child->sibling);
+                roots.insert(it.base(), std::move(cur_child));
+                cur_child = std::move(next);
             } else {
                 ++it;
             }
         }
 
         while (cur_child != nullptr) {
-            Node* next = std::exchange(cur_child->sibling, nullptr);
-            roots.push_front(cur_child);
-            cur_child = next;
+            auto next = std::move(cur_child->sibling);
+            roots.push_front(std::move(cur_child));
+            cur_child = std::move(next);
         }
 
         collapse_roots();
@@ -164,8 +129,8 @@ public:
 
     void merge(BinomialHeap other)
     {
-        std::list<Node*> roots_a = std::move(roots);
-        std::list<Node*> roots_b = std::move(other.roots);
+        decltype(roots) roots_a = std::move(roots);
+        decltype(roots) roots_b = std::move(other.roots);
         roots.clear();
 
         auto it_a = roots_a.begin();
@@ -173,16 +138,16 @@ public:
 
         while (it_a != roots_a.end() && it_b != roots_b.end()) {
             if ((*it_a)->rank < (*it_b)->rank)
-                roots.emplace_back(*it_a++);
+                roots.emplace_back(std::move(*it_a++));
             else
-                roots.emplace_back(*it_b++);
+                roots.emplace_back(std::move(*it_b++));
         }
 
         while (it_a != roots_a.end())
-            roots.emplace_back(*it_a++);
+            roots.emplace_back(std::move(*it_a++));
 
         while (it_b != roots_b.end())
-            roots.emplace_back(*it_b++);
+            roots.emplace_back(std::move(*it_b++));
 
         collapse_roots();
     }
