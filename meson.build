@@ -15,6 +15,7 @@ dependencies = [
 lib_args = ['-DBUILDING_EDA_STRUCTS']
 
 sources = [
+  'src/binary_heap.cpp',
   'src/binomial_heap.cpp',
 ]
 
@@ -51,6 +52,7 @@ test_dependencies = [
 
 test_exe = executable(
   'eda_structs_test',
+  'test/binary_heap_test.cpp',
   'test/binomial_heap_test.cpp',
   dependencies : dependencies + test_dependencies,
   link_with : lib,
