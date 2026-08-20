@@ -103,7 +103,7 @@ private:
             max = max_other;
     }
 
-    [[nodiscard]] Node* merge_roots(Node* a, Node* b)
+    [[nodiscard]] Node* link(Node* a, Node* b)
     {
         if (a != nullptr)
             node_assert_valid(a);
@@ -130,6 +130,38 @@ private:
 
         list_merge(a->child, b);
         return a;
+    }
+
+    void consolidate()
+    {
+        assert(max != nullptr);
+
+        Node* begin = std::exchange(max, nullptr);
+        Node* cur = begin;
+        std::vector<Node*> merged;
+
+        do {
+            Node* next = cur->next;
+            cur->prev = cur;
+            cur->next = cur;
+
+            Node* m = cur;
+
+            while (m->rank < merged.size() && merged[m->rank] != nullptr) {
+                Node* to_merge = std::exchange(merged[m->rank], nullptr);
+                m = link(to_merge, m);
+            }
+
+            if (m->rank >= merged.size())
+                merged.resize(m->rank + 1);
+
+            merged[m->rank] = m;
+
+            cur = next;
+        } while (cur != begin);
+
+        for (auto* root : merged)
+            merge_with_max(root);
     }
 
 public:
@@ -192,34 +224,10 @@ public:
             list_merge(max, child);
 
         T retval = std::move(max->value);
+        max = list_remove(max);
 
-        if (Node* begin = list_remove(std::exchange(max, nullptr))) {
-            Node* cur = begin;
-            std::vector<Node*> merged;
-
-            do {
-                Node* next = cur->next;
-                cur->prev = cur;
-                cur->next = cur;
-
-                Node* m = cur;
-
-                while (m->rank < merged.size() && merged[m->rank] != nullptr) {
-                    Node* to_merge = std::exchange(merged[m->rank], nullptr);
-                    m = merge_roots(to_merge, m);
-                }
-
-                if (m->rank >= merged.size())
-                    merged.resize(m->rank + 1);
-
-                merged[m->rank] = m;
-
-                cur = next;
-            } while (cur != begin);
-
-            for (auto* root : merged)
-                merge_with_max(root);
-        }
+        if (max != nullptr)
+            consolidate();
 
         --count;
         return retval;
