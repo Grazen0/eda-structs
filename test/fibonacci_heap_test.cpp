@@ -57,7 +57,7 @@ TEST_CASE("A default-constructed heap is empty", "[fibonacci_heap][basic]")
 // Single-element behaviour
 // ---------------------------------------------------------------------
 
-TEST_CASE("Inserting a single element makes it the max",
+TEST_CASE("Inserting a single element makes it the min",
           "[fibonacci_heap][basic]")
 {
     FibonacciHeap<int> heap;
@@ -77,23 +77,23 @@ TEST_CASE("Inserting a single element makes it the max",
 // Multi-element ordering
 // ---------------------------------------------------------------------
 
-TEST_CASE("Heap always reports the maximum via peek()",
+TEST_CASE("Heap always reports the minimum via peek()",
           "[fibonacci_heap][basic]")
 {
     FibonacciHeap<int> heap;
     heap.insert(5);
     REQUIRE(heap.peek() == 5);
     heap.insert(10);
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.peek() == 5);
     heap.insert(1);
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.peek() == 1);
     heap.insert(20);
-    REQUIRE(heap.peek() == 20);
+    REQUIRE(heap.peek() == 1);
     heap.insert(15);
-    REQUIRE(heap.peek() == 20);
+    REQUIRE(heap.peek() == 1);
 }
 
-TEST_CASE("Popping repeatedly yields elements in descending order",
+TEST_CASE("Popping repeatedly yields elements in ascending order",
           "[fibonacci_heap][basic]")
 {
     std::vector<int> values{5, 3, 8, 1, 9, 2, 7, 4, 6, 0};
@@ -102,7 +102,7 @@ TEST_CASE("Popping repeatedly yields elements in descending order",
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
     std::vector<int> actual = drain(heap);
     REQUIRE(actual == expected);
@@ -117,7 +117,7 @@ TEST_CASE("Heap handles duplicate values correctly", "[fibonacci_heap][basic]")
         heap.insert(3);
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{7, 7, 7, 7, 7, 3, 3, 3};
+    std::vector<int> expected{3, 3, 3, 7, 7, 7, 7, 7};
     REQUIRE(actual == expected);
 }
 
@@ -125,17 +125,17 @@ TEST_CASE("Heap handles duplicate values correctly", "[fibonacci_heap][basic]")
 // Custom comparator
 // ---------------------------------------------------------------------
 
-TEST_CASE("A heap with std::greater<int> behaves as a min-heap",
+TEST_CASE("A heap with std::greater<int> behaves as a max-heap",
           "[fibonacci_heap][comparator]")
 {
     FibonacciHeap<int, std::greater<int>> heap;
     for (int v : {5, 3, 8, 1, 9, 2})
         heap.insert(v);
 
-    REQUIRE(heap.peek() == 1);
+    REQUIRE(heap.peek() == 9);
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{1, 2, 3, 5, 8, 9};
+    std::vector<int> expected{9, 8, 5, 3, 2, 1};
     REQUIRE(actual == expected);
 }
 
@@ -156,15 +156,14 @@ TEST_CASE("A heap works with a non-trivial value type and custom comparator",
     heap.insert("abcde");
     heap.insert("");
 
-    REQUIRE(heap.peek()->get() == "abcde");
+    REQUIRE(heap.peek()->get() == "");
 
     std::vector<std::string> actual = drain(heap);
     std::vector<std::size_t> lengths;
     for (const auto& s : actual)
         lengths.push_back(s.size());
 
-    REQUIRE(std::is_sorted(lengths.begin(), lengths.end(),
-                           std::greater<std::size_t>{}));
+    REQUIRE(std::is_sorted(lengths.begin(), lengths.end()));
 }
 
 // ---------------------------------------------------------------------
@@ -181,7 +180,7 @@ TEST_CASE("Move construction transfers ownership of the heap's contents",
     FibonacciHeap<int> moved{std::move(original)};
 
     std::vector<int> actual = drain(moved);
-    std::vector<int> expected{9, 5, 4, 3, 1, 1};
+    std::vector<int> expected{1, 1, 3, 4, 5, 9};
     REQUIRE(actual == expected);
 }
 
@@ -197,7 +196,7 @@ TEST_CASE("Move assignment transfers ownership of the heap's contents",
     target = std::move(original);
 
     std::vector<int> actual = drain(target);
-    std::vector<int> expected{9, 5, 4, 3, 1, 1};
+    std::vector<int> expected{1, 1, 3, 4, 5, 9};
     REQUIRE(actual == expected);
 }
 
@@ -205,7 +204,7 @@ TEST_CASE("Move assignment transfers ownership of the heap's contents",
 // Stress tests
 // ---------------------------------------------------------------------
 
-TEST_CASE("Stress: many random insertions drain in sorted descending order",
+TEST_CASE("Stress: many random insertions drain in sorted ascending order",
           "[fibonacci_heap][stress]")
 {
     constexpr std::size_t n = 5;
@@ -216,12 +215,12 @@ TEST_CASE("Stress: many random insertions drain in sorted descending order",
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
     REQUIRE(drain(heap) == expected);
 }
 
-TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
+TEST_CASE("Stress: interleaved insert/pop keeps the min-heap invariant",
           "[fibonacci_heap][stress]")
 {
     std::mt19937 rng{7};
@@ -230,7 +229,7 @@ TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
         0.6}; // 60% insert, 40% pop when non-empty
 
     FibonacciHeap<int> heap;
-    std::vector<int> reference; // kept sorted descending
+    std::vector<int> reference; // kept sorted ascending
 
     constexpr int operations = 20'000;
     for (int op = 0; op < operations; ++op) {
@@ -238,8 +237,7 @@ TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
         if (do_insert) {
             int v = value_dist(rng);
             heap.insert(v);
-            auto it = std::upper_bound(reference.begin(), reference.end(), v,
-                                       std::greater<int>{});
+            auto it = std::upper_bound(reference.begin(), reference.end(), v);
             reference.insert(it, v);
         } else {
             REQUIRE(heap.peek() == reference.front());
@@ -270,26 +268,28 @@ TEST_CASE("Stress: heap drains fully leaving it empty and reusable",
 }
 
 // ---------------------------------------------------------------------
-// increase_key
+// decrease_key
 // ---------------------------------------------------------------------
 //
-// bool increase_key(const iterator& it, T new_value)
+// bool decrease_key(const iterator& it, T new_value)
 //
-// `insert()` now returns an iterator identifying the inserted element,
-// and it is that iterator -- rather than the element's value -- that is
-// passed back in to `increase_key()`. This means the heap no longer needs
-// to maintain its own value -> Node* map; the caller is responsible for
-// hanging on to the iterator if they want to be able to increase that
+// `insert()` returns an iterator identifying the inserted element, and it
+// is that iterator -- rather than the element's value -- that is passed
+// back in to `decrease_key()`. This means the heap no longer needs to
+// maintain its own value -> Node* map; the caller is responsible for
+// hanging on to the iterator if they want to be able to decrease that
 // element's key later.
 //
-// increase_key() returns false if `new_value` does not represent an
-// increase over the element's current value. Otherwise it updates the
-// element in place and returns true. Passing an iterator that no longer
-// refers to a live element in the heap (e.g. one that was already popped
-// out) is undefined behaviour and is not exercised by these tests.
+// decrease_key() returns false if `new_value` does not represent a
+// decrease over the element's current value, as judged by the heap's
+// Compare (i.e. Compare(new_value, current_value) must hold). Otherwise
+// it updates the element in place and returns true. Passing an iterator
+// that no longer refers to a live element in the heap (e.g. one that was
+// already popped out) is undefined behaviour and is not exercised by
+// these tests.
 
-TEST_CASE("increase_key returns false when new_value does not increase value",
-          "[fibonacci_heap][increase_key]")
+TEST_CASE("decrease_key returns false when new_value does not decrease value",
+          "[fibonacci_heap][decrease_key]")
 {
     FibonacciHeap<int> heap;
     heap.insert(5);
@@ -300,79 +300,80 @@ TEST_CASE("increase_key returns false when new_value does not increase value",
 
     SECTION("new_value equal to value")
     {
-        REQUIRE(!heap.increase_key(it3, 3));
+        REQUIRE(!heap.decrease_key(it3, 3));
     }
 
-    SECTION("new_value less than value")
+    SECTION("new_value greater than value")
     {
-        REQUIRE(!heap.increase_key(it8, 2));
+        REQUIRE(!heap.decrease_key(it8, 20));
     }
 
     // heap contents/order should be untouched
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{9, 8, 5, 3, 1};
+    std::vector<int> expected{1, 3, 5, 8, 9};
     REQUIRE(actual == expected);
 }
 
-TEST_CASE("increase_key on the max element updates peek() and returns true",
-          "[fibonacci_heap][increase_key]")
+TEST_CASE("decrease_key on the min element updates peek() and returns true",
+          "[fibonacci_heap][decrease_key]")
 {
     FibonacciHeap<int> heap;
     heap.insert(5);
     heap.insert(3);
     heap.insert(8);
-    heap.insert(1);
-    auto it9 = heap.insert(9);
-
-    REQUIRE(heap.peek() == 9);
-    REQUIRE(heap.increase_key(it9, 50));
-    REQUIRE(heap.peek() == 50);
-
-    std::vector<int> actual = drain(heap);
-    std::vector<int> expected{50, 8, 5, 3, 1};
-    REQUIRE(actual == expected);
-}
-
-TEST_CASE("increase_key on a non-max element can promote it to the new max",
-          "[fibonacci_heap][increase_key]")
-{
-    FibonacciHeap<int> heap;
-    heap.insert(5);
-    heap.insert(3);
-    heap.insert(8);
+    heap.insert(9);
     auto it1 = heap.insert(1);
-    heap.insert(9);
 
-    REQUIRE(heap.increase_key(it1, 100));
-    REQUIRE(heap.peek() == 100);
+    REQUIRE(heap.peek() == 1);
+    REQUIRE(heap.decrease_key(it1, -50));
+    REQUIRE(heap.peek() == -50);
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{100, 9, 8, 5, 3};
+    std::vector<int> expected{-50, 3, 5, 8, 9};
     REQUIRE(actual == expected);
 }
 
-TEST_CASE("increase_key that does not change the max still reorders correctly",
-          "[fibonacci_heap][increase_key]")
+TEST_CASE("decrease_key on a non-min element can promote it to the new min",
+          "[fibonacci_heap][decrease_key]")
 {
     FibonacciHeap<int> heap;
     heap.insert(5);
-    auto it3 = heap.insert(3);
+    heap.insert(3);
     heap.insert(8);
+    auto it9 = heap.insert(9);
     heap.insert(1);
-    heap.insert(9);
 
-    // 3 -> 6 is an increase but still well below the current max (9)
-    REQUIRE(heap.increase_key(it3, 6));
-    REQUIRE(heap.peek() == 9);
+    REQUIRE(heap.decrease_key(it9, -100));
+    REQUIRE(heap.peek() == -100);
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{9, 8, 6, 5, 1};
+    std::vector<int> expected{-100, 1, 3, 5, 8};
     REQUIRE(actual == expected);
 }
 
-TEST_CASE("increase_key affects only the element referred to by its "
+TEST_CASE("decrease_key that does not change the min still reorders "
+          "correctly",
+          "[fibonacci_heap][decrease_key]")
+{
+    FibonacciHeap<int> heap;
+    heap.insert(5);
+    heap.insert(1);
+    auto it8 = heap.insert(8);
+    heap.insert(9);
+    heap.insert(3);
+
+    // 8 -> 6 is a decrease but still well above the current min (1)
+    REQUIRE(heap.decrease_key(it8, 6));
+    REQUIRE(heap.peek() == 1);
+
+    std::vector<int> actual = drain(heap);
+    std::vector<int> expected{1, 3, 5, 6, 9};
+    REQUIRE(actual == expected);
+}
+
+TEST_CASE("decrease_key affects only the element referred to by its "
           "iterator, even among duplicates",
-          "[fibonacci_heap][increase_key]")
+          "[fibonacci_heap][decrease_key]")
 {
     FibonacciHeap<int> heap;
     heap.insert(4);
@@ -380,39 +381,41 @@ TEST_CASE("increase_key affects only the element referred to by its "
     heap.insert(4);
     heap.insert(10);
 
-    REQUIRE(heap.increase_key(it, 20));
+    REQUIRE(heap.decrease_key(it, -1));
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{20, 10, 4, 4};
+    std::vector<int> expected{-1, 4, 4, 10};
     REQUIRE(actual == expected);
 }
 
-TEST_CASE("increase_key can be called repeatedly on the same iterator",
-          "[fibonacci_heap][increase_key]")
+TEST_CASE("decrease_key can be called repeatedly on the same iterator",
+          "[fibonacci_heap][decrease_key]")
 {
     FibonacciHeap<int> heap;
-    auto it = heap.insert(1);
-    heap.insert(2);
+    heap.insert(10);
+    auto it = heap.insert(5);
 
-    REQUIRE(heap.increase_key(it, 5));
     REQUIRE(heap.peek() == 5);
+    REQUIRE(heap.decrease_key(it, -5));
+    REQUIRE(heap.peek() == -5);
 
-    // `it` still refers to the same (now-updated) element, so increasing
+    // `it` still refers to the same (now-updated) element, so decreasing
     // it again should succeed.
-    REQUIRE(heap.increase_key(it, 10));
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.decrease_key(it, -100));
+    REQUIRE(heap.peek() == -100);
 
-    // ...but "increasing" to a smaller value than its current one (10)
+    // ...but "decreasing" to a larger value than its current one (-100)
     // still fails.
-    REQUIRE(!heap.increase_key(it, 3));
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(!heap.decrease_key(it, -1));
+    REQUIRE(heap.peek() == -100);
 }
 
-TEST_CASE("increase_key works with a custom comparator",
-          "[fibonacci_heap][increase_key][comparator]")
+TEST_CASE("decrease_key works with a custom comparator",
+          "[fibonacci_heap][decrease_key][comparator]")
 {
-    // std::greater makes this a min-heap: "increasing" a key means moving
-    // it closer to the front of the ordering, i.e. making it *smaller*.
+    // std::greater makes this a max-heap: "decreasing" a key under the
+    // comparator means moving it closer to the front of the ordering,
+    // which corresponds to making the underlying value *larger*.
     FibonacciHeap<int, std::greater<int>> heap;
     heap.insert(5);
     auto it3 = heap.insert(3);
@@ -420,37 +423,37 @@ TEST_CASE("increase_key works with a custom comparator",
     heap.insert(1);
     auto it9 = heap.insert(9);
 
-    REQUIRE(heap.peek() == 1);
+    REQUIRE(heap.peek() == 9);
 
     SECTION("a value that moves toward the front returns true")
     {
-        REQUIRE(heap.increase_key(it9, 0));
-        REQUIRE(heap.peek() == 0);
+        REQUIRE(heap.decrease_key(it3, 20));
+        REQUIRE(heap.peek() == 20);
     }
 
     SECTION("a value that moves away from the front returns false")
     {
-        REQUIRE(!heap.increase_key(it3, 7));
+        REQUIRE(!heap.decrease_key(it9, 2));
     }
 }
 
-TEST_CASE("increase_key throws no surprises when reused after draining",
-          "[fibonacci_heap][increase_key]")
+TEST_CASE("decrease_key throws no surprises when reused after draining",
+          "[fibonacci_heap][decrease_key]")
 {
     FibonacciHeap<int> heap;
     heap.insert(1);
     REQUIRE(heap.pop() == 1);
 
     // heap is now empty and should still be usable
-    auto it1 = heap.insert(1);
+    auto it1 = heap.insert(5);
     heap.insert(2);
-    REQUIRE(heap.increase_key(it1, 3));
-    REQUIRE(heap.peek() == 3);
+    REQUIRE(heap.decrease_key(it1, 1));
+    REQUIRE(heap.peek() == 1);
 }
 
-TEST_CASE("Stress: interleaved insert/increase_key/pop keeps the max-heap "
+TEST_CASE("Stress: interleaved insert/decrease_key/pop keeps the min-heap "
           "invariant",
-          "[fibonacci_heap][increase_key][stress]")
+          "[fibonacci_heap][decrease_key][stress]")
 {
     std::mt19937 rng{123};
     std::uniform_int_distribution<int> value_dist{-10'000, 10'000};
@@ -464,7 +467,7 @@ TEST_CASE("Stress: interleaved insert/increase_key/pop keeps the max-heap "
         int value;
         Heap::iterator it;
     };
-    std::vector<Entry> reference; // kept sorted descending by value
+    std::vector<Entry> reference; // kept sorted ascending by value
 
     constexpr int operations = 5'000;
     for (int op = 0; op < operations; ++op) {
@@ -476,23 +479,23 @@ TEST_CASE("Stress: interleaved insert/increase_key/pop keeps the max-heap "
             auto it = heap.insert(v);
             auto pos = std::upper_bound(
                 reference.begin(), reference.end(), v,
-                [](int val, const Entry& e) { return val > e.value; });
+                [](int val, const Entry& e) { return val < e.value; });
             reference.insert(pos, Entry{v, it});
         } else if (choice < 8) {
-            // increase_key on a random existing element
+            // decrease_key on a random existing element
             std::uniform_int_distribution<std::size_t> idx_dist{
                 0, reference.size() - 1};
             std::size_t idx = idx_dist(rng);
             int old_v = reference[idx].value;
-            int new_v = old_v + bump_dist(rng);
+            int new_v = old_v - bump_dist(rng);
             auto it = reference[idx].it;
 
-            REQUIRE(heap.increase_key(it, new_v));
+            REQUIRE(heap.decrease_key(it, new_v));
             reference.erase(reference.begin() +
                             static_cast<std::ptrdiff_t>(idx));
             auto pos = std::upper_bound(
                 reference.begin(), reference.end(), new_v,
-                [](int val, const Entry& e) { return val > e.value; });
+                [](int val, const Entry& e) { return val < e.value; });
             reference.insert(pos, Entry{new_v, it});
         } else {
             // pop

@@ -83,25 +83,25 @@ private:
     }
 
     Compare cmp{};
-    Node* max = nullptr;
+    Node* min = nullptr;
     std::size_t count = 0;
 
-    void merge_with_max(Node* max_other)
+    void merge_with_min(Node* min_other)
     {
-        if (max_other == nullptr)
+        if (min_other == nullptr)
             return;
 
-        node_assert_valid(max_other);
+        node_assert_valid(min_other);
 
-        if (max == nullptr) {
-            max = max_other;
+        if (min == nullptr) {
+            min = min_other;
             return;
         }
 
-        list_merge(max, max_other);
+        list_merge(min, min_other);
 
-        if (cmp(max->value, max_other->value))
-            max = max_other;
+        if (cmp(min_other->value, min->value))
+            min = min_other;
     }
 
     [[nodiscard]] Node* link_nodes(Node* a, Node* b)
@@ -118,32 +118,32 @@ private:
         if (b == nullptr)
             return a;
 
-        if (cmp(a->value, b->value))
+        if (cmp(b->value, a->value))
             std::swap(a, b);
 
-        // a >= b
+        // a <= b
         ++a->rank;
         b->parent = a;
 
-        if (a->child == nullptr) {
+        if (a->child == nullptr)
             a->child = b;
-            return a;
-        }
+        else
+            list_merge(a->child, b);
 
-        list_merge(a->child, b);
         return a;
     }
 
     void consolidate()
     {
-        assert(max != nullptr);
+        assert(min != nullptr);
 
-        Node* begin = std::exchange(max, nullptr);
+        Node* begin = std::exchange(min, nullptr);
         Node* cur = begin;
         std::vector<Node*> merged;
 
         do {
             assert(cur->parent == nullptr);
+            assert(!cur->marked);
 
             Node* next = cur->next;
             cur->prev = cur;
@@ -165,7 +165,7 @@ private:
         } while (cur != begin);
 
         for (auto* root : merged)
-            merge_with_max(root);
+            merge_with_min(root);
     }
 
     void cut(Node* x)
@@ -173,6 +173,7 @@ private:
         node_assert_valid(x);
 
         Node* p = x->parent;
+        assert(p != nullptr);
         assert(p->child != nullptr);
         assert(p->rank > 0);
 
@@ -180,7 +181,7 @@ private:
         --p->rank;
 
         x->parent = nullptr;
-        list_merge(max, x);
+        list_merge(min, x);
         x->marked = false;
     }
 
@@ -243,7 +244,7 @@ public:
 
     ~FibonacciHeap()
     {
-        list_destroy(max);
+        list_destroy(min);
     }
 
     FibonacciHeap& operator=(FibonacciHeap& other) = delete;
@@ -257,15 +258,15 @@ public:
     [[nodiscard]] constexpr std::optional<std::reference_wrapper<const T>>
     peek() const
     {
-        if (max == nullptr)
+        if (min == nullptr)
             return std::nullopt;
 
-        return max->value;
+        return min->value;
     }
 
     void merge(FibonacciHeap other)
     {
-        merge_with_max(std::exchange(other.max, nullptr));
+        merge_with_min(std::exchange(other.min, nullptr));
     }
 
     constexpr iterator insert(T value)
@@ -277,7 +278,7 @@ public:
     iterator emplace(Args&&... args)
     {
         auto* node = new Node{std::forward<Args>(args)...};
-        merge_with_max(node);
+        merge_with_min(node);
         ++count;
 
         return iterator{node};
@@ -285,33 +286,34 @@ public:
 
     std::optional<T> pop()
     {
-        if (max == nullptr)
+        if (min == nullptr)
             return std::nullopt;
 
         // Merge children into roots
-        if (Node* child = std::exchange(max->child, nullptr)) {
+        if (Node* child = std::exchange(min->child, nullptr)) {
             Node* cur = child;
             do {
                 cur->parent = nullptr;
+                cur->marked = false;
                 cur = cur->next;
             } while (cur != child);
 
-            list_merge(max, child);
+            list_merge(min, child);
         }
 
-        T retval = std::move(max->value);
-        delete std::exchange(max, list_remove(max));
+        T retval = std::move(min->value);
+        delete std::exchange(min, list_remove(min));
 
-        if (max != nullptr)
+        if (min != nullptr)
             consolidate();
 
         --count;
         return retval;
     }
 
-    bool increase_key(const iterator& it, T new_value)
+    bool decrease_key(const iterator& it, T new_value)
     {
-        if (cmp(new_value, *it) || *it == new_value)
+        if (cmp(*it, new_value) || *it == new_value)
             return false;
 
         Node* x = it.node;
@@ -319,20 +321,20 @@ public:
 
         Node* p = x->parent;
 
-        if (p != nullptr && cmp(p->value, x->value)) {
+        if (p != nullptr && cmp(x->value, p->value)) {
             cut(x);
             cascading_cut(p);
         }
 
-        if (cmp(max->value, x->value))
-            max = x;
+        if (cmp(x->value, min->value))
+            min = x;
 
         return true;
     }
 
     constexpr void swap(FibonacciHeap& other) noexcept
     {
-        std::swap(max, other.max);
+        std::swap(min, other.min);
     }
 
     [[nodiscard]] constexpr std::size_t size() const
