@@ -2,6 +2,7 @@
 #define EDA_STRUCTS_FIBONACCI_HEAP_HPP
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -139,7 +140,7 @@ private:
 
         Node* begin = std::exchange(min, nullptr);
         Node* cur = begin;
-        std::vector<Node*> merged;
+        std::vector<Node*> merged(2 * std::log2(count));
 
         do {
             assert(cur->parent == nullptr);
@@ -151,13 +152,10 @@ private:
 
             Node* m = cur;
 
-            while (m->rank < merged.size() && merged[m->rank] != nullptr) {
+            while (merged[m->rank] != nullptr) {
                 Node* to_merge = std::exchange(merged[m->rank], nullptr);
                 m = link_nodes(to_merge, m);
             }
-
-            if (m->rank >= merged.size())
-                merged.resize(m->rank + 1);
 
             merged[m->rank] = m;
 
