@@ -267,6 +267,7 @@ public:
     void merge(FibonacciHeap other)
     {
         merge_with_min(std::exchange(other.min, nullptr));
+        count += other.count;
     }
 
     constexpr iterator insert(T value)
@@ -335,6 +336,7 @@ public:
     constexpr void swap(FibonacciHeap& other) noexcept
     {
         std::swap(min, other.min);
+        std::swap(count, other.count);
     }
 
     [[nodiscard]] constexpr std::size_t size() const
