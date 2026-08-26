@@ -12,30 +12,32 @@
 
 template<typename T, typename Operator, T IDENTITY>
 class PersistentSegmentTree {
+private:
+    using NodeId = std::size_t;
+
 public:
     class Version {
     private:
-        explicit Version(std::size_t idx)
-            : idx{idx}
+        explicit Version(NodeId node_id)
+            : root_id_{node_id}
         {
         }
 
-        std::size_t idx;
+        std::size_t root_id_;
 
         friend class PersistentSegmentTree;
     };
 
 private:
-    using NodeId = std::size_t;
     struct Node {
         T value;
         std::optional<NodeId> left = std::nullopt;
         std::optional<NodeId> right = std::nullopt;
     };
 
-    std::vector<Node> nodes_;
-    std::vector<NodeId> roots_;
     std::size_t size_;
+    std::vector<Node> nodes_;
+    NodeId init_id_;
     Operator op_;
 
     [[nodiscard]] constexpr Node& get_node(NodeId id)
@@ -93,12 +95,9 @@ private:
             new_right);
     }
 
-    [[nodiscard]] constexpr std::size_t get_version_root(Version v)
+    [[nodiscard]] constexpr NodeId get_version_root(Version v)
     {
-        if (v.idx >= roots_.size())
-            throw std::invalid_argument("invalid version");
-
-        return roots_.at(v.idx);
+        return v.root_id_;
     }
 
     [[nodiscard]] NodeId node_from_data(std::initializer_list<T> data,
@@ -134,17 +133,17 @@ private:
                          right);
     }
 
-    [[nodiscard]] Version make_version(std::size_t new_root)
+    template<typename... Args>
+    [[nodiscard]] Version emplace_version(Args&&... args)
     {
-        std::size_t v = roots_.size();
-        roots_.emplace_back(new_root);
-        return Version{v};
+        NodeId id = make_node(std::forward<Args>(args)...);
+        return Version{id};
     }
 
 public:
-    [[nodiscard]] static constexpr Version init()
+    [[nodiscard]] constexpr Version init()
     {
-        return Version{0};
+        return Version{init_id_};
     }
 
     explicit PersistentSegmentTree(std::size_t size, Operator op = Operator{})
@@ -154,7 +153,7 @@ public:
         if (size == 0)
             throw std::invalid_argument("data cannot be empty");
 
-        roots_.push_back(node_from_range(0, size - 1));
+        init_id_ = node_from_range(0, size - 1);
     }
 
     PersistentSegmentTree(std::initializer_list<T> data,
@@ -165,7 +164,7 @@ public:
         if (data.size() == 0)
             throw std::invalid_argument("data cannot be empty");
 
-        roots_.push_back(node_from_data(data, 0, data.size() - 1));
+        init_id_ = node_from_data(data, 0, data.size() - 1);
     }
 
     [[nodiscard]] constexpr std::size_t size() const
@@ -183,7 +182,7 @@ public:
     {
         NodeId root = get_version_root(v);
         NodeId new_root = update(root, 0, size_ - 1, pos, std::move(value));
-        return make_version(new_root);
+        return Version{new_root};
     }
 };
 
