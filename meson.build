@@ -18,6 +18,7 @@ sources = [
   'src/binary_heap.cpp',
   'src/binomial_heap.cpp',
   'src/fibonacci_heap.cpp',
+  'src/persistent_stack.cpp',
 ]
 
 inc_dirs = include_directories('include')
@@ -56,6 +57,7 @@ test_exe = executable(
   'test/binary_heap_test.cpp',
   'test/binomial_heap_test.cpp',
   'test/fibonacci_heap_test.cpp',
+  'test/persistent_stack_test.cpp',
   dependencies : dependencies + test_dependencies,
   link_with : lib,
 )
