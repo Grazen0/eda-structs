@@ -25,53 +25,68 @@ public:
 
 private:
     struct Node {
-        std::optional<T> top = std::nullopt;
-        std::optional<std::size_t> next = std::nullopt;
+        struct Value {
+            T top;
+            std::size_t next;
+        };
+
+        std::optional<Value> value = std::nullopt;
+
+        Node() = default;
+
+        Node(T top, std::size_t next)
+            : value{
+                  Value{std::move(top), next}
+        }
+        {
+        }
     };
 
     std::vector<Node> roots{Node{}};
 
-    [[nodiscard]] Version make_version(Node node)
+    template<typename... Args>
+    [[nodiscard]] constexpr Version emplace_version(Args&&... args)
     {
         std::size_t p = roots.size();
-        roots.emplace_back(std::move(node));
+        roots.emplace_back(std::forward<Args>(args)...);
         return Version{p};
     }
 
+    [[nodiscard]] constexpr Node& get_version_root(Version v)
+    {
+        if (v.idx >= roots.size())
+            throw std::out_of_range("stack version out of range");
+
+        return roots[v.idx];
+    }
+
 public:
-    [[nodiscard]] static Version init()
+    [[nodiscard]] constexpr Version init()
     {
         return Version{0};
     }
 
-    [[nodiscard]] Version push(Version v, T value)
+    [[nodiscard]] constexpr Version push(Version v, T value)
     {
-        Node node{
-            .top = std::move(value),
-            .next = v.idx,
-        };
-
-        return make_version(std::move(node));
+        return emplace_version(std::move(value), v.idx);
     }
 
-    [[nodiscard]] std::optional<T> peek(Version v)
+    [[nodiscard]] constexpr std::optional<T> peek(Version v)
     {
-        if (v.idx >= roots.size())
-            throw std::out_of_range("stack version out of range");
+        auto& node = get_version_root(v);
+        if (!node.value)
+            return std::nullopt;
 
-        return roots[v.idx].top;
+        return node.value->top;
     }
 
-    [[nodiscard]] Version pop(Version v)
+    [[nodiscard]] constexpr Version pop(Version v)
     {
-        if (v.idx >= roots.size())
-            throw std::out_of_range("stack version out of range");
-
-        auto next = roots[v.idx].next;
-        if (!next)
+        auto& node = get_version_root(v);
+        if (!node.value)
             throw std::out_of_range("cannot pop from empty stack");
 
-        return Version{*next};
+        return Version{node.value->next};
     };
 };
 
