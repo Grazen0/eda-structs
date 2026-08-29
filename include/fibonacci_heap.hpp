@@ -312,7 +312,7 @@ public:
 
     bool decrease_key(const iterator& it, T new_value)
     {
-        if (cmp(*it, new_value) || *it == new_value)
+        if (!cmp(new_value, *it))
             return false;
 
         Node* x = it.node;
