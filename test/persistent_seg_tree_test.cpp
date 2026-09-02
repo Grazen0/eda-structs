@@ -1,13 +1,13 @@
-#include "persistent_segment_tree.hpp"
+#include "persistent_seg_tree.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <functional>
 #include <limits>
 #include <numeric>
 #include <vector>
 
-TEST_CASE("persistent segment tree basic queries", "[persistent_segment_tree]")
+TEST_CASE("persistent segment tree basic queries", "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5};
 
     REQUIRE(tree.size() == 5);
 
@@ -25,9 +25,9 @@ TEST_CASE("persistent segment tree basic queries", "[persistent_segment_tree]")
 }
 
 TEST_CASE("persistent segment tree update changes only new version",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5};
 
     auto v0 = tree.init();
     auto v1 = tree.update(v0, 0, 10);
@@ -46,9 +46,9 @@ TEST_CASE("persistent segment tree update changes only new version",
 }
 
 TEST_CASE("persistent segment tree supports branching versions",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5};
 
     auto v0 = tree.init();
 
@@ -79,9 +79,9 @@ TEST_CASE("persistent segment tree supports branching versions",
 }
 
 TEST_CASE("persistent segment tree handles repeated updates at same position",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4};
 
     auto v0 = tree.init();
     auto v1 = tree.update(v0, 1, 20);
@@ -100,10 +100,9 @@ TEST_CASE("persistent segment tree handles repeated updates at same position",
 }
 
 TEST_CASE("persistent segment tree handles negative values",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {-10, 5,   -3,
-                                                          8,   -20, 7};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {-10, 5, -3, 8, -20, 7};
 
     auto v0 = tree.init();
 
@@ -115,9 +114,9 @@ TEST_CASE("persistent segment tree handles negative values",
 }
 
 TEST_CASE("persistent segment tree supports multiplication",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::multiplies<int>, 1> tree = {2, 3, 4, 5};
+    PersistentSegTree<int, std::multiplies<int>, 1> tree = {2, 3, 4, 5};
 
     auto v0 = tree.init();
 
@@ -133,11 +132,10 @@ TEST_CASE("persistent segment tree supports multiplication",
     REQUIRE(tree.query(v1, 1, 1) == 10);
 }
 
-TEST_CASE("persistent segment tree supports minimum",
-          "[persistent_segment_tree]")
+TEST_CASE("persistent segment tree supports minimum", "[persistent_seg_tree]")
 {
-    using Tree = PersistentSegmentTree<int, std::function<int(int, int)>,
-                                       std::numeric_limits<int>::max()>;
+    using Tree = PersistentSegTree<int, std::function<int(int, int)>,
+                                   std::numeric_limits<int>::max()>;
 
     Tree tree({8, 3, 7, 1, 9, 4, 6},
               [](int a, int b) { return std::min(a, b); });
@@ -156,11 +154,10 @@ TEST_CASE("persistent segment tree supports minimum",
     REQUIRE(tree.query(v1, 3, 6) == 1);
 }
 
-TEST_CASE("persistent segment tree supports maximum",
-          "[persistent_segment_tree]")
+TEST_CASE("persistent segment tree supports maximum", "[persistent_seg_tree]")
 {
-    using Tree = PersistentSegmentTree<int, std::function<int(int, int)>,
-                                       std::numeric_limits<int>::lowest()>;
+    using Tree = PersistentSegTree<int, std::function<int(int, int)>,
+                                   std::numeric_limits<int>::lowest()>;
 
     Tree tree({8, 3, 7, 1, 9, 4, 6},
               [](int a, int b) { return std::max(a, b); });
@@ -180,11 +177,11 @@ TEST_CASE("persistent segment tree supports maximum",
 }
 
 TEST_CASE("persistent segment tree handles non-power-of-two sizes",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
     // Deliberately use a size that isn't a power of two.
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5,
-                                                          6, 7, 8, 9};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {1, 2, 3, 4, 5,
+                                                      6, 7, 8, 9};
 
     auto v0 = tree.init();
 
@@ -202,11 +199,11 @@ TEST_CASE("persistent segment tree handles non-power-of-two sizes",
 }
 
 TEST_CASE("persistent segment tree handles a large number of updates",
-          "[persistent_segment_tree][stress]")
+          "[persistent_seg_tree][stress]")
 {
     // A reasonably large tree while keeping the initializer-list constructor
     // practical.
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {
+    PersistentSegTree<int, std::plus<int>, 0> tree = {
         0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
         16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
         32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
@@ -221,8 +218,7 @@ TEST_CASE("persistent segment tree handles a large number of updates",
     std::vector<int> expected(N);
     std::iota(expected.begin(), expected.end(), 0);
 
-    std::vector<PersistentSegmentTree<int, std::plus<int>, 0>::Version>
-        versions;
+    std::vector<PersistentSegTree<int, std::plus<int>, 0>::Version> versions;
     versions.reserve(UPDATES + 1);
     versions.push_back(v);
 
@@ -254,9 +250,9 @@ TEST_CASE("persistent segment tree handles a large number of updates",
 }
 
 TEST_CASE("persistent segment tree stress-tests independent branches",
-          "[persistent_segment_tree][stress]")
+          "[persistent_seg_tree][stress]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {
+    PersistentSegTree<int, std::plus<int>, 0> tree = {
         1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
         17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
     };
@@ -266,8 +262,7 @@ TEST_CASE("persistent segment tree stress-tests independent branches",
 
     auto root = tree.init();
 
-    std::vector<PersistentSegmentTree<int, std::plus<int>, 0>::Version>
-        versions;
+    std::vector<PersistentSegTree<int, std::plus<int>, 0>::Version> versions;
     versions.reserve(BRANCHES);
 
     // Every update is made from the original root. This catches accidental
@@ -295,10 +290,10 @@ TEST_CASE("persistent segment tree stress-tests independent branches",
 }
 
 TEST_CASE("persistent segment tree handles identity through partial queries",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> tree = {10, 20, 30, 40,
-                                                          50, 60, 70};
+    PersistentSegTree<int, std::plus<int>, 0> tree = {10, 20, 30, 40,
+                                                      50, 60, 70};
 
     auto v0 = tree.init();
 
@@ -314,18 +309,18 @@ TEST_CASE("persistent segment tree handles identity through partial queries",
 }
 
 TEST_CASE("persistent segment tree move construction and assignment",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    PersistentSegmentTree<int, std::plus<int>, 0> original = {1, 2, 3, 4};
+    PersistentSegTree<int, std::plus<int>, 0> original = {1, 2, 3, 4};
 
     auto v = original.update(original.init(), 1, 20);
 
-    PersistentSegmentTree<int, std::plus<int>, 0> moved(std::move(original));
+    PersistentSegTree<int, std::plus<int>, 0> moved(std::move(original));
 
     REQUIRE(moved.size() == 4);
     REQUIRE(moved.query(v, 0, 3) == 28);
 
-    PersistentSegmentTree<int, std::plus<int>, 0> assigned = {100, 200};
+    PersistentSegTree<int, std::plus<int>, 0> assigned = {100, 200};
 
     assigned = std::move(moved);
 
@@ -334,10 +329,10 @@ TEST_CASE("persistent segment tree move construction and assignment",
 }
 
 TEST_CASE("size constructor works with minimum operator",
-          "[persistent_segment_tree]")
+          "[persistent_seg_tree]")
 {
-    using Tree = PersistentSegmentTree<int, std::function<int(int, int)>,
-                                       std::numeric_limits<int>::max()>;
+    using Tree = PersistentSegTree<int, std::function<int(int, int)>,
+                                   std::numeric_limits<int>::max()>;
 
     Tree tree(16, [](int a, int b) { return std::min(a, b); });
 

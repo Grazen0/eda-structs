@@ -1,5 +1,5 @@
-#ifndef EDA_STRUCTS_PERSISTENT_SEGMENT_TREE_HPP
-#define EDA_STRUCTS_PERSISTENT_SEGMENT_TREE_HPP
+#ifndef EDA_STRUCTS_PERSISTENT_SEG_TREE_HPP
+#define EDA_STRUCTS_PERSISTENT_SEG_TREE_HPP
 
 #include <algorithm>
 #include <cassert>
@@ -11,7 +11,7 @@
 #include <vector>
 
 template<typename T, typename Operator, T IDENTITY>
-class PersistentSegmentTree {
+class PersistentSegTree {
 private:
     using NodeId = std::size_t;
 
@@ -25,7 +25,7 @@ public:
 
         std::size_t root_id_;
 
-        friend class PersistentSegmentTree;
+        friend class PersistentSegTree;
     };
 
 private:
@@ -146,7 +146,7 @@ public:
         return Version{init_id_};
     }
 
-    explicit PersistentSegmentTree(std::size_t size, Operator op = Operator{})
+    explicit PersistentSegTree(std::size_t size, Operator op = Operator{})
         : size_{size},
           op_{std::move(op)}
     {
@@ -156,8 +156,7 @@ public:
         init_id_ = node_from_range(0, size - 1);
     }
 
-    PersistentSegmentTree(std::initializer_list<T> data,
-                          Operator op = Operator{})
+    PersistentSegTree(std::initializer_list<T> data, Operator op = Operator{})
         : size_{data.size()},
           op_{std::move(op)}
     {
