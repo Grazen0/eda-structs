@@ -10,8 +10,6 @@
 
 namespace
 {
-    // Repeatedly peek (to check for emptiness) then pop, collecting pop()'s
-    // value.
     template<typename T, typename Compare>
     std::vector<T> drain(BinomialHeap<T, Compare>& heap)
     {
@@ -56,7 +54,7 @@ TEST_CASE("A default-constructed heap is empty", "[binomial_heap][basic]")
 // Single-element behaviour
 // ---------------------------------------------------------------------
 
-TEST_CASE("Inserting a single element makes it the max",
+TEST_CASE("Inserting a single element makes it the minimum",
           "[binomial_heap][basic]")
 {
     BinomialHeap<int> heap;
@@ -76,47 +74,55 @@ TEST_CASE("Inserting a single element makes it the max",
 // Multi-element ordering
 // ---------------------------------------------------------------------
 
-TEST_CASE("Heap always reports the maximum via peek()",
+TEST_CASE("Heap always reports the minimum via peek()",
           "[binomial_heap][basic]")
 {
     BinomialHeap<int> heap;
+
     heap.insert(5);
     REQUIRE(heap.peek() == 5);
+
     heap.insert(10);
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.peek() == 5);
+
     heap.insert(1);
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.peek() == 1);
+
     heap.insert(20);
-    REQUIRE(heap.peek() == 20);
-    heap.insert(15);
-    REQUIRE(heap.peek() == 20);
+    REQUIRE(heap.peek() == 1);
+
+    heap.insert(0);
+    REQUIRE(heap.peek() == 0);
 }
 
-TEST_CASE("Popping repeatedly yields elements in descending order",
+TEST_CASE("Popping repeatedly yields elements in ascending order",
           "[binomial_heap][basic]")
 {
     std::vector<int> values{5, 3, 8, 1, 9, 2, 7, 4, 6, 0};
+
     BinomialHeap<int> heap;
     for (int v : values)
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
-    std::vector<int> actual = drain(heap);
-    REQUIRE(actual == expected);
+    REQUIRE(drain(heap) == expected);
 }
 
 TEST_CASE("Heap handles duplicate values correctly", "[binomial_heap][basic]")
 {
     BinomialHeap<int> heap;
+
     for (int i = 0; i < 5; ++i)
         heap.insert(7);
+
     for (int i = 0; i < 3; ++i)
         heap.insert(3);
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{7, 7, 7, 7, 7, 3, 3, 3};
+    std::vector<int> expected{3, 3, 3, 7, 7, 7, 7, 7};
+
     REQUIRE(actual == expected);
 }
 
@@ -124,19 +130,20 @@ TEST_CASE(
     "Heap correctly orders an arbitrary number of elements (power-of-two sizes)",
     "[binomial_heap][basic]")
 {
-    // Binomial heaps have interesting structural transitions at powers of two
+    // Binomial heaps have interesting structural transitions at powers of two;
     // exercise sizes just below, at, and just above such boundaries.
     auto n = GENERATE(1u, 2u, 3u, 4u, 7u, 8u, 9u, 15u, 16u, 17u, 31u, 32u, 33u);
     CAPTURE(n);
 
     std::vector<int> values =
         random_vector(n, 1234u + static_cast<unsigned>(n));
+
     BinomialHeap<int> heap;
     for (int v : values)
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
     REQUIRE(drain(heap) == expected);
 }
@@ -145,17 +152,19 @@ TEST_CASE(
 // Custom comparator
 // ---------------------------------------------------------------------
 
-TEST_CASE("A heap with std::greater<int> behaves as a min-heap",
+TEST_CASE("A heap with std::greater<int> behaves as a max-heap",
           "[binomial_heap][comparator]")
 {
     BinomialHeap<int, std::greater<int>> heap;
+
     for (int v : {5, 3, 8, 1, 9, 2})
         heap.insert(v);
 
-    REQUIRE(heap.peek() == 1);
+    REQUIRE(heap.peek() == 9);
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{1, 2, 3, 5, 8, 9};
+    std::vector<int> expected{9, 8, 5, 3, 2, 1};
+
     REQUIRE(actual == expected);
 }
 
@@ -170,21 +179,22 @@ TEST_CASE("A heap works with a non-trivial value type and custom comparator",
           "[binomial_heap][comparator]")
 {
     BinomialHeap<std::string, ByLength> heap;
+
     heap.insert("a");
     heap.insert("abc");
     heap.insert("ab");
     heap.insert("abcde");
     heap.insert("");
 
-    REQUIRE(heap.peek() == "abcde");
+    REQUIRE(heap.peek() == "");
 
     std::vector<std::string> actual = drain(heap);
     std::vector<std::size_t> lengths;
+
     for (const auto& s : actual)
         lengths.push_back(s.size());
 
-    REQUIRE(std::is_sorted(lengths.begin(), lengths.end(),
-                           std::greater<std::size_t>{}));
+    REQUIRE(std::is_sorted(lengths.begin(), lengths.end()));
 }
 
 // ---------------------------------------------------------------------
@@ -203,7 +213,8 @@ TEST_CASE("Merging with an empty heap is a no-op on contents",
     heap.merge(std::move(empty));
 
     std::vector<int> actual = drain(heap);
-    std::vector<int> expected{3, 2, 1};
+    std::vector<int> expected{1, 2, 3};
+
     REQUIRE(actual == expected);
 }
 
@@ -213,6 +224,7 @@ TEST_CASE(
 {
     BinomialHeap<int> empty;
     BinomialHeap<int> other;
+
     other.insert(1);
     other.insert(2);
     other.insert(3);
@@ -220,7 +232,8 @@ TEST_CASE(
     empty.merge(std::move(other));
 
     std::vector<int> actual = drain(empty);
-    std::vector<int> expected{3, 2, 1};
+    std::vector<int> expected{1, 2, 3};
+
     REQUIRE(actual == expected);
 }
 
@@ -239,7 +252,8 @@ TEST_CASE(
     a.merge(std::move(b));
 
     std::vector<int> actual = drain(a);
-    std::vector<int> expected{25, 16, 9, 4, 3, 2, 1, 0};
+    std::vector<int> expected{0, 1, 2, 3, 4, 9, 16, 25};
+
     REQUIRE(actual == expected);
 }
 
@@ -258,6 +272,7 @@ TEST_CASE("Merging heaps of varying, mismatched sizes preserves total ordering",
     BinomialHeap<int> a;
     for (int v : values_a)
         a.insert(v);
+
     BinomialHeap<int> b;
     for (int v : values_b)
         b.insert(v);
@@ -267,7 +282,7 @@ TEST_CASE("Merging heaps of varying, mismatched sizes preserves total ordering",
     std::vector<int> expected;
     expected.insert(expected.end(), values_a.begin(), values_a.end());
     expected.insert(expected.end(), values_b.begin(), values_b.end());
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
     REQUIRE(drain(a) == expected);
 }
@@ -280,13 +295,15 @@ TEST_CASE("Move construction transfers ownership of the heap's contents",
           "[binomial_heap][move]")
 {
     BinomialHeap<int> original;
+
     for (int v : {3, 1, 4, 1, 5, 9})
         original.insert(v);
 
     BinomialHeap<int> moved{std::move(original)};
 
     std::vector<int> actual = drain(moved);
-    std::vector<int> expected{9, 5, 4, 3, 1, 1};
+    std::vector<int> expected{1, 1, 3, 4, 5, 9};
+
     REQUIRE(actual == expected);
 }
 
@@ -294,6 +311,7 @@ TEST_CASE("Move assignment transfers ownership of the heap's contents",
           "[binomial_heap][move]")
 {
     BinomialHeap<int> original;
+
     for (int v : {3, 1, 4, 1, 5, 9})
         original.insert(v);
 
@@ -302,7 +320,8 @@ TEST_CASE("Move assignment transfers ownership of the heap's contents",
     target = std::move(original);
 
     std::vector<int> actual = drain(target);
-    std::vector<int> expected{9, 5, 4, 3, 1, 1};
+    std::vector<int> expected{1, 1, 3, 4, 5, 9};
+
     REQUIRE(actual == expected);
 }
 
@@ -319,20 +338,21 @@ TEST_CASE("swap() exchanges the contents of two heaps", "[binomial_heap][move]")
 
     a.swap(b);
 
-    REQUIRE(a.peek() == 300);
-    REQUIRE(b.peek() == 2);
+    REQUIRE(a.peek() == 100);
+    REQUIRE(b.peek() == 1);
 
     std::vector<int> a_contents = drain(a);
     std::vector<int> b_contents = drain(b);
-    REQUIRE(a_contents == std::vector<int>{300, 200, 100});
-    REQUIRE(b_contents == std::vector<int>{2, 1});
+
+    REQUIRE(a_contents == std::vector<int>{100, 200, 300});
+    REQUIRE(b_contents == std::vector<int>{1, 2});
 }
 
 // ---------------------------------------------------------------------
 // Stress tests
 // ---------------------------------------------------------------------
 
-TEST_CASE("Stress: many random insertions drain in sorted descending order",
+TEST_CASE("Stress: many random insertions drain in sorted ascending order",
           "[binomial_heap][stress]")
 {
     constexpr std::size_t n = 5;
@@ -343,12 +363,12 @@ TEST_CASE("Stress: many random insertions drain in sorted descending order",
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
     REQUIRE(drain(heap) == expected);
 }
 
-TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
+TEST_CASE("Stress: interleaved insert/pop keeps the min-heap invariant",
           "[binomial_heap][stress]")
 {
     std::mt19937 rng{7};
@@ -357,16 +377,18 @@ TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
         0.6}; // 60% insert, 40% pop when non-empty
 
     BinomialHeap<int> heap;
-    std::vector<int> reference; // kept sorted descending
+    std::vector<int> reference; // kept sorted ascending
 
     constexpr int operations = 20'000;
+
     for (int op = 0; op < operations; ++op) {
         bool do_insert = reference.empty() || op_dist(rng);
+
         if (do_insert) {
             int v = value_dist(rng);
             heap.insert(v);
-            auto it = std::upper_bound(reference.begin(), reference.end(), v,
-                                       std::greater<int>{});
+
+            auto it = std::upper_bound(reference.begin(), reference.end(), v);
             reference.insert(it, v);
         } else {
             REQUIRE(heap.peek() == reference.front());
@@ -391,14 +413,17 @@ TEST_CASE(
     for (std::size_t h = 0; h < num_heaps; ++h) {
         std::vector<int> values =
             random_vector(per_heap, static_cast<unsigned>(h) * 97u + 3u);
+
         BinomialHeap<int> small;
         for (int v : values)
             small.insert(v);
+
         combined.merge(std::move(small));
         all_values.insert(all_values.end(), values.begin(), values.end());
     }
 
-    std::sort(all_values.begin(), all_values.end(), std::greater<int>{});
+    std::sort(all_values.begin(), all_values.end());
+
     REQUIRE(drain(combined) == all_values);
 }
 
@@ -406,16 +431,19 @@ TEST_CASE("Stress: heap drains fully leaving it empty and reusable",
           "[binomial_heap][stress]")
 {
     BinomialHeap<int> heap;
+
     std::vector<int> values = random_vector(10'000, 99);
     for (int v : values)
         heap.insert(v);
 
     (void)drain(heap);
+
     REQUIRE_THROWS_AS(heap.peek(), std::out_of_range);
     REQUIRE_THROWS_AS(heap.pop(), std::out_of_range);
 
-    // heap should be usable again after being fully drained
+    // Heap should be usable again after being fully drained.
     heap.insert(123);
+
     REQUIRE(heap.peek() == 123);
     REQUIRE(heap.pop() == 123);
 }
