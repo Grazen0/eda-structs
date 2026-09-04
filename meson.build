@@ -20,6 +20,7 @@ sources = [
   'src/fibonacci_heap.cpp',
   'src/persistent_stack.cpp',
   'src/persistent_seg_tree.cpp',
+  'src/quick_heap.cpp',
 ]
 
 inc_dirs = include_directories('include')
@@ -60,6 +61,7 @@ test_exe = executable(
   'test/fibonacci_heap_test.cpp',
   'test/persistent_stack_test.cpp',
   'test/persistent_seg_tree_test.cpp',
+  'test/quick_heap_test.cpp',
   dependencies : dependencies + test_dependencies,
   link_with : lib,
 )
