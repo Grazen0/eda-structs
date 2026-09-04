@@ -11,8 +11,6 @@
 
 namespace
 {
-    // Repeatedly peek (to check for emptiness) then pop, collecting pop()'s
-    // value.
     template<typename T, typename Compare>
     std::vector<T> drain(BinaryHeap<T, Compare>& heap)
     {
@@ -57,7 +55,8 @@ TEST_CASE("A default-constructed heap is empty", "[binary_heap][basic]")
 // Single-element behaviour
 // ---------------------------------------------------------------------
 
-TEST_CASE("Inserting a single element makes it the max", "[binary_heap][basic]")
+TEST_CASE("Inserting a single element makes it the minimum",
+          "[binary_heap][basic]")
 {
     BinaryHeap<int> heap;
     heap.insert(42);
@@ -76,65 +75,71 @@ TEST_CASE("Inserting a single element makes it the max", "[binary_heap][basic]")
 // Multi-element ordering
 // ---------------------------------------------------------------------
 
-TEST_CASE("Heap always reports the maximum via peek()", "[binary_heap][basic]")
+TEST_CASE("Heap always reports the minimum via peek()", "[binary_heap][basic]")
 {
     BinaryHeap<int> heap;
+
     heap.insert(5);
     REQUIRE(heap.peek() == 5);
+
     heap.insert(10);
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.peek() == 5);
+
     heap.insert(1);
-    REQUIRE(heap.peek() == 10);
+    REQUIRE(heap.peek() == 1);
+
     heap.insert(20);
-    REQUIRE(heap.peek() == 20);
-    heap.insert(15);
-    REQUIRE(heap.peek() == 20);
+    REQUIRE(heap.peek() == 1);
+
+    heap.insert(0);
+    REQUIRE(heap.peek() == 0);
 }
 
-TEST_CASE("Popping repeatedly yields elements in descending order",
+TEST_CASE("Popping repeatedly yields elements in ascending order",
           "[binary_heap][basic]")
 {
     std::vector<int> values{5, 3, 8, 1, 9, 2, 7, 4, 6, 0};
+
     BinaryHeap<int> heap;
     for (int v : values)
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
-    std::vector<int> actual = drain(heap);
-    REQUIRE(actual == expected);
+    REQUIRE(drain(heap) == expected);
 }
 
 TEST_CASE("Heap handles duplicate values correctly", "[binary_heap][basic]")
 {
     BinaryHeap<int> heap;
+
     for (int i = 0; i < 5; ++i)
         heap.insert(7);
+
     for (int i = 0; i < 3; ++i)
         heap.insert(3);
 
-    std::vector<int> actual = drain(heap);
-    std::vector<int> expected{7, 7, 7, 7, 7, 3, 3, 3};
-    REQUIRE(actual == expected);
+    std::vector<int> expected{3, 3, 3, 7, 7, 7, 7, 7};
+    REQUIRE(drain(heap) == expected);
 }
 
 // ---------------------------------------------------------------------
 // Custom comparator
 // ---------------------------------------------------------------------
 
-TEST_CASE("A heap with std::greater<int> behaves as a min-heap",
+TEST_CASE("A heap with std::greater<int> behaves as a max-heap",
           "[binary_heap][comparator]")
 {
     BinaryHeap<int, std::greater<int>> heap;
+
     for (int v : {5, 3, 8, 1, 9, 2})
         heap.insert(v);
 
-    REQUIRE(heap.peek() == 1);
+    REQUIRE(heap.peek() == 9);
 
-    std::vector<int> actual = drain(heap);
-    std::vector<int> expected{1, 2, 3, 5, 8, 9};
-    REQUIRE(actual == expected);
+    std::vector<int> expected{9, 8, 5, 3, 2, 1};
+    REQUIRE(drain(heap) == expected);
 }
 
 struct ByLength {
@@ -148,21 +153,22 @@ TEST_CASE("A heap works with a non-trivial value type and custom comparator",
           "[binary_heap][comparator]")
 {
     BinaryHeap<std::string, ByLength> heap;
+
     heap.insert("a");
     heap.insert("abc");
     heap.insert("ab");
     heap.insert("abcde");
     heap.insert("");
 
-    REQUIRE(heap.peek()->get() == "abcde");
+    REQUIRE(heap.peek()->get() == "");
 
     std::vector<std::string> actual = drain(heap);
     std::vector<std::size_t> lengths;
+
     for (const auto& s : actual)
         lengths.push_back(s.size());
 
-    REQUIRE(std::is_sorted(lengths.begin(), lengths.end(),
-                           std::greater<std::size_t>{}));
+    REQUIRE(std::is_sorted(lengths.begin(), lengths.end()));
 }
 
 // ---------------------------------------------------------------------
@@ -173,20 +179,21 @@ TEST_CASE("Move construction transfers ownership of the heap's contents",
           "[binary_heap][move]")
 {
     BinaryHeap<int> original;
+
     for (int v : {3, 1, 4, 1, 5, 9})
         original.insert(v);
 
     BinaryHeap<int> moved{std::move(original)};
 
-    std::vector<int> actual = drain(moved);
-    std::vector<int> expected{9, 5, 4, 3, 1, 1};
-    REQUIRE(actual == expected);
+    std::vector<int> expected{1, 1, 3, 4, 5, 9};
+    REQUIRE(drain(moved) == expected);
 }
 
 TEST_CASE("Move assignment transfers ownership of the heap's contents",
           "[binary_heap][move]")
 {
     BinaryHeap<int> original;
+
     for (int v : {3, 1, 4, 1, 5, 9})
         original.insert(v);
 
@@ -194,16 +201,15 @@ TEST_CASE("Move assignment transfers ownership of the heap's contents",
     target.insert(-1);
     target = std::move(original);
 
-    std::vector<int> actual = drain(target);
-    std::vector<int> expected{9, 5, 4, 3, 1, 1};
-    REQUIRE(actual == expected);
+    std::vector<int> expected{1, 1, 3, 4, 5, 9};
+    REQUIRE(drain(target) == expected);
 }
 
 // ---------------------------------------------------------------------
 // Stress tests
 // ---------------------------------------------------------------------
 
-TEST_CASE("Stress: many random insertions drain in sorted descending order",
+TEST_CASE("Stress: many random insertions drain in sorted ascending order",
           "[binary_heap][stress]")
 {
     constexpr std::size_t n = 5;
@@ -214,12 +220,12 @@ TEST_CASE("Stress: many random insertions drain in sorted descending order",
         heap.insert(v);
 
     std::vector<int> expected = values;
-    std::sort(expected.begin(), expected.end(), std::greater<int>{});
+    std::sort(expected.begin(), expected.end());
 
     REQUIRE(drain(heap) == expected);
 }
 
-TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
+TEST_CASE("Stress: interleaved insert/pop keeps the min-heap invariant",
           "[binary_heap][stress]")
 {
     std::mt19937 rng{7};
@@ -228,16 +234,18 @@ TEST_CASE("Stress: interleaved insert/pop keeps the max-heap invariant",
         0.6}; // 60% insert, 40% pop when non-empty
 
     BinaryHeap<int> heap;
-    std::vector<int> reference; // kept sorted descending
+    std::vector<int> reference; // kept sorted ascending
 
     constexpr int operations = 20'000;
+
     for (int op = 0; op < operations; ++op) {
         bool do_insert = reference.empty() || op_dist(rng);
+
         if (do_insert) {
             int v = value_dist(rng);
             heap.insert(v);
-            auto it = std::upper_bound(reference.begin(), reference.end(), v,
-                                       std::greater<int>{});
+
+            auto it = std::upper_bound(reference.begin(), reference.end(), v);
             reference.insert(it, v);
         } else {
             REQUIRE(heap.peek() == reference.front());
@@ -253,16 +261,19 @@ TEST_CASE("Stress: heap drains fully leaving it empty and reusable",
           "[binary_heap][stress]")
 {
     BinaryHeap<int> heap;
+
     std::vector<int> values = random_vector(10'000, 99);
     for (int v : values)
         heap.insert(v);
 
     (void)drain(heap);
+
     REQUIRE(!heap.peek());
     REQUIRE(!heap.pop());
 
-    // heap should be usable again after being fully drained
+    // Heap should be usable again after being fully drained.
     heap.insert(123);
+
     REQUIRE(heap.peek() == 123);
     REQUIRE(heap.pop() == 123);
 }

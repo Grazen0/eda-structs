@@ -10,6 +10,46 @@
 
 template<typename T, typename Compare = std::less<T>>
 class BinaryHeap {
+private:
+    std::vector<T> data;
+    Compare cmp{};
+
+    void bubble_up(std::size_t i)
+    {
+        assert(i < data.size());
+
+        if (i == 0)
+            return;
+
+        std::size_t p = (i - 1) / 2;
+
+        if (cmp(data[i], data[p])) {
+            std::swap(data[i], data[p]);
+            bubble_up(p);
+        }
+    }
+
+    void bubble_down(std::size_t i)
+    {
+        assert(i < data.size());
+
+        std::size_t l = (2 * i) + 1;
+        std::size_t r = (2 * i) + 2;
+
+        std::size_t b = i;
+
+        if (l < data.size() && cmp(data[l], data[b]))
+            b = l;
+
+        if (r < data.size() && cmp(data[r], data[b]))
+            b = r;
+
+        if (i != b) {
+            std::swap(data[i], data[b]);
+            bubble_down(b);
+        }
+    }
+
 public:
     constexpr void insert(T value)
     {
@@ -28,9 +68,7 @@ public:
         if (data.empty())
             return std::nullopt;
 
-        std::swap(data.front(), data.back());
-
-        T retval = std::move(data.back());
+        T retval = std::exchange(data.front(), data.back());
         data.pop_back();
 
         if (!data.empty())
@@ -56,46 +94,6 @@ public:
     [[nodiscard]] constexpr std::size_t size() const
     {
         return data.size();
-    }
-
-private:
-    std::vector<T> data;
-    Compare cmp{};
-
-    void bubble_up(std::size_t i)
-    {
-        assert(i < data.size());
-
-        if (i == 0)
-            return;
-
-        std::size_t p = (i - 1) / 2;
-
-        if (cmp(data[p], data[i])) {
-            std::swap(data[p], data[i]);
-            bubble_up(p);
-        }
-    }
-
-    void bubble_down(std::size_t i)
-    {
-        assert(i < data.size());
-
-        std::size_t l = (2 * i) + 1;
-        std::size_t r = (2 * i) + 2;
-
-        std::size_t b = i;
-
-        if (l < data.size() && cmp(data[b], data[l]))
-            b = l;
-
-        if (r < data.size() && cmp(data[b], data[r]))
-            b = r;
-
-        if (i != b) {
-            std::swap(data[i], data[b]);
-            bubble_down(b);
-        }
     }
 };
 
