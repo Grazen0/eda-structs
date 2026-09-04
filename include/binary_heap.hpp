@@ -11,41 +11,41 @@
 template<typename T, typename Compare = std::less<T>>
 class BinaryHeap {
 private:
-    std::vector<T> data;
-    Compare cmp{};
+    std::vector<T> m_data;
+    Compare m_cmp{};
 
     void bubble_up(std::size_t i)
     {
-        assert(i < data.size());
+        assert(i < m_data.size());
 
         if (i == 0)
             return;
 
         std::size_t p = (i - 1) / 2;
 
-        if (cmp(data[i], data[p])) {
-            std::swap(data[i], data[p]);
+        if (m_cmp(m_data[i], m_data[p])) {
+            std::swap(m_data[i], m_data[p]);
             bubble_up(p);
         }
     }
 
     void bubble_down(std::size_t i)
     {
-        assert(i < data.size());
+        assert(i < m_data.size());
 
         std::size_t l = (2 * i) + 1;
         std::size_t r = (2 * i) + 2;
 
         std::size_t b = i;
 
-        if (l < data.size() && cmp(data[l], data[b]))
+        if (l < m_data.size() && m_cmp(m_data[l], m_data[b]))
             b = l;
 
-        if (r < data.size() && cmp(data[r], data[b]))
+        if (r < m_data.size() && m_cmp(m_data[r], m_data[b]))
             b = r;
 
         if (i != b) {
-            std::swap(data[i], data[b]);
+            std::swap(m_data[i], m_data[b]);
             bubble_down(b);
         }
     }
@@ -59,19 +59,19 @@ public:
     template<typename... Args>
     void emplace(Args&&... args)
     {
-        data.emplace_back(std::forward<Args>(args)...);
-        bubble_up(data.size() - 1);
+        m_data.emplace_back(std::forward<Args>(args)...);
+        bubble_up(m_data.size() - 1);
     }
 
     std::optional<T> pop()
     {
-        if (data.empty())
+        if (m_data.empty())
             return std::nullopt;
 
-        T retval = std::exchange(data.front(), data.back());
-        data.pop_back();
+        T retval = std::exchange(m_data.front(), m_data.back());
+        m_data.pop_back();
 
-        if (!data.empty())
+        if (!m_data.empty())
             bubble_down(0);
 
         return retval;
@@ -80,20 +80,20 @@ public:
     [[nodiscard]] constexpr std::optional<std::reference_wrapper<const T>>
     peek() const
     {
-        if (data.empty())
+        if (m_data.empty())
             return std::nullopt;
 
-        return data[0];
+        return m_data[0];
     }
 
     [[nodiscard]] constexpr bool empty() const
     {
-        return data.empty();
+        return m_data.empty();
     }
 
     [[nodiscard]] constexpr std::size_t size() const
     {
-        return data.size();
+        return m_data.size();
     }
 };
 

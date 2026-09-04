@@ -14,11 +14,11 @@ public:
     class Version {
     private:
         explicit Version(std::size_t idx)
-            : idx{idx}
+            : m_idx{idx}
         {
         }
 
-        std::size_t idx;
+        std::size_t m_idx;
 
         friend class PersistentStack;
     };
@@ -26,38 +26,38 @@ public:
 private:
     struct Node {
         struct Value {
-            T top;
-            std::size_t next;
+            T m_top;
+            std::size_t m_next;
         };
 
-        std::optional<Value> value = std::nullopt;
+        std::optional<Value> m_value = std::nullopt;
 
         Node() = default;
 
         Node(T top, std::size_t next)
-            : value{
+            : m_value{
                   Value{std::move(top), next}
         }
         {
         }
     };
 
-    std::vector<Node> roots{Node{}};
+    std::vector<Node> m_roots{Node{}};
 
     template<typename... Args>
     [[nodiscard]] constexpr Version emplace_version(Args&&... args)
     {
-        std::size_t p = roots.size();
-        roots.emplace_back(std::forward<Args>(args)...);
+        std::size_t p = m_roots.size();
+        m_roots.emplace_back(std::forward<Args>(args)...);
         return Version{p};
     }
 
     [[nodiscard]] constexpr Node& get_version_root(Version v)
     {
-        if (v.idx >= roots.size())
+        if (v.m_idx >= m_roots.size())
             throw std::out_of_range("stack version out of range");
 
-        return roots[v.idx];
+        return m_roots[v.m_idx];
     }
 
 public:
@@ -68,25 +68,25 @@ public:
 
     [[nodiscard]] constexpr Version push(Version v, T value)
     {
-        return emplace_version(std::move(value), v.idx);
+        return emplace_version(std::move(value), v.m_idx);
     }
 
     [[nodiscard]] constexpr std::optional<T> peek(Version v)
     {
         auto& node = get_version_root(v);
-        if (!node.value)
+        if (!node.m_value)
             return std::nullopt;
 
-        return node.value->top;
+        return node.m_value->m_top;
     }
 
     [[nodiscard]] constexpr Version pop(Version v)
     {
         auto& node = get_version_root(v);
-        if (!node.value)
+        if (!node.m_value)
             throw std::out_of_range("cannot pop from empty stack");
 
-        return Version{node.value->next};
+        return Version{node.m_value->m_next};
     };
 };
 

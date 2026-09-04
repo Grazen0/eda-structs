@@ -83,9 +83,9 @@ private:
         } while (cur != begin);
     }
 
-    Compare cmp{};
-    Node* min = nullptr;
-    std::size_t count = 0;
+    Compare m_cmp{};
+    Node* m_min = nullptr;
+    std::size_t m_count = 0;
 
     void merge_with_min(Node* min_other)
     {
@@ -94,15 +94,15 @@ private:
 
         node_assert_valid(min_other);
 
-        if (min == nullptr) {
-            min = min_other;
+        if (m_min == nullptr) {
+            m_min = min_other;
             return;
         }
 
-        list_merge(min, min_other);
+        list_merge(m_min, min_other);
 
-        if (cmp(min_other->value, min->value))
-            min = min_other;
+        if (m_cmp(min_other->value, m_min->value))
+            m_min = min_other;
     }
 
     [[nodiscard]] Node* link_nodes(Node* a, Node* b)
@@ -119,7 +119,7 @@ private:
         if (b == nullptr)
             return a;
 
-        if (cmp(b->value, a->value))
+        if (m_cmp(b->value, a->value))
             std::swap(a, b);
 
         // a <= b
@@ -136,11 +136,11 @@ private:
 
     void consolidate()
     {
-        assert(min != nullptr);
+        assert(m_min != nullptr);
 
-        Node* begin = std::exchange(min, nullptr);
+        Node* begin = std::exchange(m_min, nullptr);
         Node* cur = begin;
-        std::vector<Node*> merged(2 * std::log2(count));
+        std::vector<Node*> merged(2 * std::log2(m_count));
 
         do {
             assert(cur->parent == nullptr);
@@ -179,7 +179,7 @@ private:
         --p->rank;
 
         x->parent = nullptr;
-        list_merge(min, x);
+        list_merge(m_min, x);
         x->marked = false;
     }
 
@@ -242,7 +242,7 @@ public:
 
     ~FibonacciHeap()
     {
-        list_destroy(min);
+        list_destroy(m_min);
     }
 
     FibonacciHeap& operator=(FibonacciHeap& other) = delete;
@@ -256,16 +256,16 @@ public:
     [[nodiscard]] constexpr std::optional<std::reference_wrapper<const T>>
     peek() const
     {
-        if (min == nullptr)
+        if (m_min == nullptr)
             return std::nullopt;
 
-        return min->value;
+        return m_min->value;
     }
 
     void merge(FibonacciHeap other)
     {
-        merge_with_min(std::exchange(other.min, nullptr));
-        count += other.count;
+        merge_with_min(std::exchange(other.m_min, nullptr));
+        m_count += other.m_count;
     }
 
     constexpr iterator insert(T value)
@@ -278,18 +278,18 @@ public:
     {
         auto* node = new Node{std::forward<Args>(args)...};
         merge_with_min(node);
-        ++count;
+        ++m_count;
 
         return iterator{node};
     }
 
     std::optional<T> pop()
     {
-        if (min == nullptr)
+        if (m_min == nullptr)
             return std::nullopt;
 
         // Merge children into roots
-        if (Node* child = std::exchange(min->child, nullptr)) {
+        if (Node* child = std::exchange(m_min->child, nullptr)) {
             Node* cur = child;
             do {
                 cur->parent = nullptr;
@@ -297,22 +297,22 @@ public:
                 cur = cur->next;
             } while (cur != child);
 
-            list_merge(min, child);
+            list_merge(m_min, child);
         }
 
-        T retval = std::move(min->value);
-        delete std::exchange(min, list_remove(min));
+        T retval = std::move(m_min->value);
+        delete std::exchange(m_min, list_remove(m_min));
 
-        if (min != nullptr)
+        if (m_min != nullptr)
             consolidate();
 
-        --count;
+        --m_count;
         return retval;
     }
 
     bool decrease_key(const iterator& it, T new_value)
     {
-        if (!cmp(new_value, *it))
+        if (!m_cmp(new_value, *it))
             return false;
 
         Node* x = it.node;
@@ -320,31 +320,31 @@ public:
 
         Node* p = x->parent;
 
-        if (p != nullptr && cmp(x->value, p->value)) {
+        if (p != nullptr && m_cmp(x->value, p->value)) {
             cut(x);
             cascading_cut(p);
         }
 
-        if (cmp(x->value, min->value))
-            min = x;
+        if (m_cmp(x->value, m_min->value))
+            m_min = x;
 
         return true;
     }
 
     constexpr void swap(FibonacciHeap& other) noexcept
     {
-        std::swap(min, other.min);
-        std::swap(count, other.count);
+        std::swap(m_min, other.m_min);
+        std::swap(m_count, other.m_count);
     }
 
     [[nodiscard]] constexpr std::size_t size() const
     {
-        return count;
+        return m_count;
     }
 
     [[nodiscard]] constexpr bool empty() const
     {
-        return count == 0;
+        return m_count == 0;
     }
 };
 

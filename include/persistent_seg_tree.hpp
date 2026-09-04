@@ -31,21 +31,21 @@ public:
 private:
     static constexpr NodeId NODE_NIL = static_cast<NodeId>(-1);
     struct Node {
-        T value{};
-        NodeId left = NODE_NIL;
-        NodeId right = NODE_NIL;
+        T m_value{};
+        NodeId m_left = NODE_NIL;
+        NodeId m_right = NODE_NIL;
 
         Node() = default;
 
         explicit Node(T value)
-            : value{std::move(value)}
+            : m_value{std::move(value)}
         {
         }
 
         Node(T value, NodeId left, NodeId right)
-            : value{std::move(value)},
-              left{left},
-              right{right}
+            : m_value{std::move(value)},
+              m_left{left},
+              m_right{right}
         {
         }
     };
@@ -78,11 +78,11 @@ private:
         Node& node = get_node(node_id);
 
         if (tl == l && tr == r)
-            return node.value;
+            return node.m_value;
 
         std::size_t tm = (tl + tr) / 2;
-        return m_op(query(node.left, tl, tm, l, std::min(r, tm)),
-                    query(node.right, tm + 1, tr, std::max(l, tm + 1), r));
+        return m_op(query(node.m_left, tl, tm, l, std::min(r, tm)),
+                    query(node.m_right, tm + 1, tr, std::max(l, tm + 1), r));
     }
 
     [[nodiscard]] NodeId update(NodeId node_id, std::size_t tl, std::size_t tr,
@@ -92,13 +92,13 @@ private:
 
         if (tl == tr) {
             assert(tl == pos);
-            assert(node.left == NODE_NIL);
-            assert(node.right == NODE_NIL);
+            assert(node.m_left == NODE_NIL);
+            assert(node.m_right == NODE_NIL);
             return make_node(std::move(value));
         }
 
-        NodeId new_left = node.left;
-        NodeId new_right = node.right;
+        NodeId new_left = node.m_left;
+        NodeId new_right = node.m_right;
 
         std::size_t tm = (tl + tr) / 2;
         if (pos <= tm)
@@ -107,8 +107,8 @@ private:
             new_right = update(new_right, tm + 1, tr, pos, std::move(value));
 
         return make_node(
-            m_op(get_node(new_left).value, get_node(new_right).value), new_left,
-            new_right);
+            m_op(get_node(new_left).m_value, get_node(new_right).m_value),
+            new_left, new_right);
     }
 
     [[nodiscard]] constexpr NodeId get_version_root(Version v)
@@ -129,7 +129,7 @@ private:
         NodeId left = node_from_data(data, tl, tm);
         NodeId right = node_from_data(data, tm + 1, tr);
 
-        return make_node(m_op(get_node(left).value, get_node(right).value),
+        return make_node(m_op(get_node(left).m_value, get_node(right).m_value),
                          left, right);
     }
 
@@ -147,7 +147,7 @@ private:
         NodeId left = node_from_iter(it, tl, tm);
         NodeId right = node_from_iter(it, tm + 1, tr);
 
-        return make_node(m_op(get_node(left).value, get_node(right).value),
+        return make_node(m_op(get_node(left).m_value, get_node(right).m_value),
                          left, right);
     }
 
@@ -163,7 +163,7 @@ private:
         NodeId left = node_from_range(tl, tm);
         NodeId right = node_from_range(tm + 1, tr);
 
-        return make_node(m_op(get_node(left).value, get_node(right).value),
+        return make_node(m_op(get_node(left).m_value, get_node(right).m_value),
                          left, right);
     }
 
