@@ -14,6 +14,7 @@ class QuickHeap {
 private:
     std::deque<T> m_heap;
     std::vector<std::size_t> m_pivots{m_heap.size()};
+    std::size_t pivot_offset = 0;
     Compare m_cmp;
 
     [[nodiscard]] std::size_t partition(std::size_t r)
@@ -35,9 +36,9 @@ private:
     {
         assert(!m_heap.empty());
 
-        while (0 != m_pivots.back()) {
-            std::size_t q = partition(m_pivots.back() - 1);
-            m_pivots.push_back(q);
+        while (0 != m_pivots.back() - pivot_offset) {
+            std::size_t q = partition(m_pivots.back() - pivot_offset - 1);
+            m_pivots.push_back(q + pivot_offset);
         }
 
         m_pivots.pop_back();
@@ -78,10 +79,12 @@ public:
         ++m_pivots[0];
         std::size_t p = 1;
 
-        while (p < m_pivots.size() && !m_cmp(m_heap.at(m_pivots[p]), value)) {
-            m_heap.at(i) = std::exchange(m_heap.at(m_pivots[p] + 1),
-                                         std::move(m_heap.at(m_pivots[p])));
-            i = m_pivots[p++]++;
+        while (p < m_pivots.size() &&
+               !m_cmp(m_heap.at(m_pivots[p] - pivot_offset), value)) {
+            m_heap.at(i) =
+                std::exchange(m_heap.at(m_pivots[p] - pivot_offset + 1),
+                              std::move(m_heap.at(m_pivots[p] - pivot_offset)));
+            i = m_pivots[p++]++ - pivot_offset;
         }
 
         m_heap.at(i) = std::move(value);
@@ -95,9 +98,7 @@ public:
         iqs();
         T retval = std::move(m_heap.front());
         m_heap.pop_front();
-
-        for (auto& p : m_pivots)
-            --p;
+        ++pivot_offset;
 
         return retval;
     }
