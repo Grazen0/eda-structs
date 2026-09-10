@@ -14,23 +14,37 @@ private:
     using NodeId = std::size_t;
 
     struct Node {
-        std::vector<std::optional<NodeId>> children;
-        bool is_end = false;
+        std::vector<std::optional<NodeId>> m_children;
+        bool m_is_end = false;
 
         Node()
-            : children(RANGE_SIZE)
+            : m_children(RANGE_SIZE)
         {
         }
     };
 
-    std::vector<Node> nodes;
+    std::vector<Node> m_nodes;
 
     template<typename... Args>
-    [[nodiscard]] NodeId make_node(Args&&... args)
+    [[nodiscard]] constexpr NodeId make_node(Args&&... args)
     {
-        NodeId id = nodes.size();
-        nodes.emplace_back(std::forward<Args>(args)...);
+        NodeId id = m_nodes.size();
+        m_nodes.emplace_back(std::forward<Args>(args)...);
         return id;
+    }
+
+    [[nodiscard]] constexpr NodeId dup_node(NodeId id)
+    {
+        Node dup = get_node(id);
+        return make_node(std::move(dup));
+    }
+
+    [[nodiscard]] constexpr NodeId dup_node_or_new(std::optional<NodeId> id)
+    {
+        if (!id)
+            return make_node();
+
+        return dup_node(*id);
     }
 
     [[nodiscard]] static constexpr std::size_t map_char(char c)
@@ -47,12 +61,12 @@ private:
 
     [[nodiscard]] constexpr Node& get_node(NodeId id)
     {
-        return nodes.at(id);
+        return m_nodes.at(id);
     }
 
     [[nodiscard]] constexpr const Node& get_node(NodeId id) const
     {
-        return nodes.at(id);
+        return m_nodes.at(id);
     }
 
 public:
@@ -74,30 +88,23 @@ public:
 
     [[nodiscard]] Version insert(Version v, std::string_view s)
     {
-        Version out{std::nullopt};
-        // Note that cur_dst being a pointer assumes the following:
-        // 1. out.node_id is never moved somewhere else
-        // 2. node children are never reallocated
-        std::optional<NodeId>* cur_dst = &out.node_id;
+        NodeId cur_dst = dup_node_or_new(v.node_id);
+        Version out{cur_dst};
+
         std::optional<NodeId> cur_src = v.node_id;
 
         for (char c : s) {
             std::size_t mc = map_char(c);
-            if (cur_src) {
-                Node cpy = get_node(*cur_src);
-                *cur_dst = make_node(std::move(cpy));
-            } else {
-                *cur_dst = make_node();
-            }
-
-            cur_dst = &get_node(**cur_dst).children.at(mc);
 
             if (cur_src)
-                cur_src = get_node(*cur_src).children.at(mc);
+                cur_src = get_node(*cur_src).m_children.at(mc);
+
+            NodeId next = dup_node_or_new(cur_src);
+            get_node(cur_dst).m_children.at(mc) = next;
+            cur_dst = next;
         }
 
-        *cur_dst = cur_src ? make_node(get_node(*cur_src)) : make_node();
-        get_node(**cur_dst).is_end = true;
+        get_node(cur_dst).m_is_end = true;
         return out;
     }
 
@@ -107,9 +114,9 @@ public:
 
         const auto* it = s.begin();
         while (it != s.end() && cur)
-            cur = get_node(*cur).children.at(map_char(*it++));
+            cur = get_node(*cur).m_children.at(map_char(*it++));
 
-        return it == s.end() && cur.has_value() && get_node(*cur).is_end;
+        return it == s.end() && cur && get_node(*cur).m_is_end;
     }
 };
 
