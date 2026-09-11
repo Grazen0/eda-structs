@@ -2,10 +2,12 @@
 #define EDA_STRUCTS_QUICK_HEAP
 
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <deque>
 #include <functional>
 #include <optional>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -16,10 +18,13 @@ private:
     std::vector<std::size_t> m_pivots{m_heap.size()};
     std::size_t pivot_offset = 0;
     Compare m_cmp;
+    std::mt19937_64 m_rnd;
 
-    [[nodiscard]] std::size_t partition(std::size_t r)
+    [[nodiscard]] std::size_t partition(std::size_t r, std::size_t pivot_idx)
     {
         assert(r < m_heap.size());
+
+        std::swap(m_heap.at(pivot_idx), m_heap.at(r));
 
         std::size_t q = 0;
         const auto& pivot = m_heap.at(r);
@@ -37,7 +42,10 @@ private:
         assert(!m_heap.empty());
 
         while (0 != m_pivots.back() - pivot_offset) {
-            std::size_t q = partition(m_pivots.back() - pivot_offset - 1);
+            std::size_t r = m_pivots.back() - pivot_offset - 1;
+            std::uniform_int_distribution<std::size_t> dist{0, r};
+            std::size_t pivot_idx = dist(m_rnd);
+            std::size_t q = partition(r, pivot_idx);
             m_pivots.push_back(q + pivot_offset);
         }
 
@@ -46,20 +54,23 @@ private:
 
 public:
     explicit QuickHeap(Compare cmp = {})
-        : m_cmp{std::move(cmp)}
+        : m_cmp{std::move(cmp)},
+          m_rnd(std::chrono::steady_clock::now().time_since_epoch().count())
     {
     }
 
     QuickHeap(std::initializer_list<T> data, Compare cmp = {})
         : m_heap{data},
-          m_cmp{std::move(cmp)}
+          m_cmp{std::move(cmp)},
+          m_rnd(std::chrono::steady_clock::now().time_since_epoch().count())
     {
     }
 
     template<typename Iter>
     QuickHeap(Iter begin, Iter end, Compare cmp = {})
-        : m_heap{begin, end},
-          m_cmp{std::move(cmp)}
+        : m_heap{std::move(begin), std::move(end)},
+          m_cmp{std::move(cmp)},
+          m_rnd(std::chrono::steady_clock::now().time_since_epoch().count())
     {
     }
 
