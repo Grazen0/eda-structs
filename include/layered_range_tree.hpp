@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
@@ -14,14 +15,11 @@
 
 template<typename T>
 class LayeredRangeTree {
-public:
-    using Point = std::pair<T, T>;
-
 private:
     using NodeId = std::size_t;
     static constexpr NodeId NIL = static_cast<NodeId>(-1);
 
-    enum class Dir {
+    enum class Dir : std::uint8_t {
         LEFT,
         RIGHT
     };
@@ -106,7 +104,7 @@ private:
         assert(l <= r);
 
         if (l == r) {
-            Point val = *it++;
+            auto val = *it++;
             // NOTE: could make these be N/A or something
             NodeId nid = make_node(val.first, val.first);
             get_node(nid).m_ys.emplace_back(val.second);
@@ -183,8 +181,8 @@ private:
     }
 
     struct CascadeRange {
-        std::ptrdiff_t l;
-        std::ptrdiff_t r;
+        std::ptrdiff_t l{};
+        std::ptrdiff_t r{};
 
         template<typename Iter>
         CascadeRange(Iter begin, Iter end, T lb, T rb)
@@ -220,7 +218,7 @@ private:
     }
 
 public:
-    LayeredRangeTree(std::initializer_list<Point> data)
+    LayeredRangeTree(std::initializer_list<std::pair<T, T>> data)
         : m_size{data.size()},
           m_min_x{data.begin()->first},
           m_max_x{(data.end() - 1)->first}
