@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -217,11 +218,8 @@ private:
 
 public:
     LayeredRangeTree(std::initializer_list<std::pair<T, T>> data)
-        : m_size{data.size()}
+        : LayeredRangeTree{data.begin(), data.end()}
     {
-        assert(std::is_sorted(data.begin(), data.end()));
-        auto it = data.begin();
-        std::tie(m_root, m_min_x, m_max_x) = node_from_iter(it, 0, m_size - 1);
     }
 
     template<typename Iter>
@@ -230,7 +228,9 @@ public:
           m_min_x{begin->first},
           m_max_x{(end - 1)->first}
     {
-        assert(std::is_sorted(begin, end));
+        if (!std::is_sorted(begin, end))
+            throw std::invalid_argument("data must be sorted by x");
+
         std::tie(m_root, m_min_x, m_max_x) =
             node_from_iter(begin, 0, m_size - 1);
     }
