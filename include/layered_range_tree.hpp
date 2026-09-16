@@ -6,9 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <iterator>
-#include <queue>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -219,13 +217,11 @@ private:
 
 public:
     LayeredRangeTree(std::initializer_list<std::pair<T, T>> data)
-        : m_size{data.size()},
-          m_min_x{data.begin()->first},
-          m_max_x{(data.end() - 1)->first}
+        : m_size{data.size()}
     {
         assert(std::is_sorted(data.begin(), data.end()));
         auto it = data.begin();
-        m_root = std::get<0>(node_from_iter(it, 0, m_size - 1));
+        std::tie(m_root, m_min_x, m_max_x) = node_from_iter(it, 0, m_size - 1);
     }
 
     template<typename Iter>
@@ -235,7 +231,8 @@ public:
           m_max_x{(end - 1)->first}
     {
         assert(std::is_sorted(begin, end));
-        m_root = std::get<0>(node_from_iter(begin, 0, m_size - 1));
+        std::tie(m_root, m_min_x, m_max_x) =
+            node_from_iter(begin, 0, m_size - 1);
     }
 
     [[nodiscard]] constexpr std::size_t size() const
@@ -279,8 +276,8 @@ public:
                 rnid = rnode.child(rdir);
                 rrange = cascade(rnode, rdir, rrange);
 
-                assert(lrange.r - lrange.l >= -1);
-                assert(rrange.r - rrange.l >= -1);
+                assert(lrange.size() >= 0);
+                assert(rrange.size() >= 0);
             }
         }
 
@@ -319,34 +316,6 @@ public:
         }
 
         return count;
-    }
-
-    void ugly_print() const
-    {
-        std::queue<std::pair<NodeId, std::size_t>> q;
-        q.emplace(m_root, 0);
-
-        std::size_t last_depth = 0;
-
-        while (!q.empty()) {
-            auto [nid, depth] = q.front();
-            q.pop();
-            if (nid == NIL)
-                continue;
-
-            const Node& node = get_node(nid);
-            if (depth != last_depth) {
-                std::cout << "\n";
-                last_depth = depth;
-            }
-
-            std::cout << node.m_left_max << "," << node.m_right_min << "("
-                      << node.m_ys.size() << ")  ";
-            q.emplace(node.m_left, depth + 1);
-            q.emplace(node.m_right, depth + 1);
-        }
-
-        std::cout << "\n";
     }
 };
 
