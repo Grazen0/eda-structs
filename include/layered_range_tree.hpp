@@ -123,7 +123,7 @@ private:
         auto& a = left.m_ys;
         auto& b = right.m_ys;
         auto& out = node.m_ys;
-        node.m_ys.reserve(a.size() + b.size());
+        out.reserve(a.size() + b.size());
 
         std::vector<std::pair<Dir, std::size_t>> down_ptrs;
         down_ptrs.reserve(a.size() + b.size());
@@ -132,12 +132,12 @@ private:
         std::size_t j = 0;
 
         while (i < a.size() || j < b.size()) {
-            if (j >= b.size() || (i < a.size() && a.at(i) < b.at(j))) {
-                down_ptrs.emplace_back(Dir::LEFT, i);
-                out.emplace_back(a.at(i++));
-            } else {
+            if (i >= a.size() || (j < b.size() && b.at(j) < a.at(i))) {
                 down_ptrs.emplace_back(Dir::RIGHT, j);
                 out.emplace_back(b.at(j++));
+            } else {
+                down_ptrs.emplace_back(Dir::LEFT, i);
+                out.emplace_back(a.at(i++));
             }
         }
 
@@ -188,7 +188,7 @@ private:
             : l{std::lower_bound(begin, end, lb) - begin},
               r{std::upper_bound(begin, end, rb) - begin - 1}
         {
-            assert(size() >= 0);
+            assert(r + 1 >= l);
         }
 
         [[nodiscard]] std::size_t size() const
