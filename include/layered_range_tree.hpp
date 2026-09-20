@@ -39,13 +39,13 @@ private:
 
         explicit Node(T left_max, T right_min)
             : m_left_max{std::move(left_max)},
-              m_right_min(std::move(right_min))
+              m_right_min{std::move(right_min)}
         {
         }
 
         Node(T left_max, T right_min, NodeId left, NodeId right)
             : m_left_max{std::move(left_max)},
-              m_right_min(std::move(right_min)),
+              m_right_min{std::move(right_min)},
               m_left{left},
               m_right{right}
         {
