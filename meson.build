@@ -5,7 +5,9 @@ project(
   meson_version : '>= 1.3.0',
   default_options : [
     'warning_level=3',
-    'cpp_std=c++17',
+    'cpp_std=c++23',
+    'b_sanitize=address,undefined',
+    'b_lundef=false',
   ],
 )
 
@@ -17,6 +19,7 @@ lib_args = ['-DBUILDING_EDA_STRUCTS']
 sources = [
   'src/binary_heap.cpp',
   'src/binomial_heap.cpp',
+  'src/disjoint_sparse_table.cpp',
   'src/fibonacci_heap.cpp',
   'src/layered_range_tree.cpp',
   'src/persistent_seg_tree.cpp',
@@ -60,6 +63,7 @@ test_exe = executable(
   'eda_structs_test',
   'test/binary_heap_test.cpp',
   'test/binomial_heap_test.cpp',
+  'test/disjoint_sparse_table_test.cpp',
   'test/fibonacci_heap_test.cpp',
   'test/layered_range_tree_test.cpp',
   'test/persistent_seg_tree_test.cpp',
