@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_QUICK_HEAP
-#define EDA_STRUCTS_QUICK_HEAP
-
+#pragma once
 #include <cassert>
 #include <chrono>
 #include <cstddef>
@@ -133,5 +131,3 @@ public:
         return m_heap.empty();
     }
 };
-
-#endif

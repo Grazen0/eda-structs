@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_FIBONACCI_HEAP_HPP
-#define EDA_STRUCTS_FIBONACCI_HEAP_HPP
-
+#pragma once
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -347,5 +345,3 @@ public:
         return m_count == 0;
     }
 };
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_LAYERED_RANGE_TREE_HPP
-#define EDA_STRUCTS_LAYERED_RANGE_TREE_HPP
-
+#pragma once
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -318,5 +316,3 @@ public:
         return count;
     }
 };
-
-#endif

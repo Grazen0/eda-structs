@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_BINOMIAL_HEAP_HPP
-#define EDA_STRUCTS_BINOMIAL_HEAP_HPP
-
+#pragma once
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -222,5 +220,3 @@ public:
         std::swap(m_roots, other.m_roots);
     }
 };
-
-#endif

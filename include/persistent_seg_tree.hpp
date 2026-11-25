@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_PERSISTENT_SEG_TREE_HPP
-#define EDA_STRUCTS_PERSISTENT_SEG_TREE_HPP
-
+#pragma once
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -235,5 +233,3 @@ public:
         return Version{new_root};
     }
 };
-
-#endif

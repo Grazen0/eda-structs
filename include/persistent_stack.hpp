@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_PERSISTENT_STACK_HPP
-#define EDA_STRUCTS_PERSISTENT_STACK_HPP
-
+#pragma once
 #include <cassert>
 #include <cstddef>
 #include <optional>
@@ -89,5 +87,3 @@ public:
         return Version{node.m_value->m_next};
     };
 };
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_PERSISTENT_TRIE_HPP
-#define EDA_STRUCTS_PERSISTENT_TRIE_HPP
-
+#pragma once
 #include <cstddef>
 #include <optional>
 #include <stdexcept>
@@ -119,5 +117,3 @@ public:
         return it == s.end() && cur && get_node(*cur).m_is_end;
     }
 };
-
-#endif

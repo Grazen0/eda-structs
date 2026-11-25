@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_DISJOINT_SPARSE_TABLE
-#define EDA_STRUCTS_DISJOINT_SPARSE_TABLE
-
+#pragma once
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
@@ -68,5 +66,3 @@ public:
         return m_op(m_sum[lvl][l], m_sum[lvl][r]);
     }
 };
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef EDA_STRUCTS_BINARY_HEAP_HPP
-#define EDA_STRUCTS_BINARY_HEAP_HPP
-
+#pragma once
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -96,5 +94,3 @@ public:
         return m_data.size();
     }
 };
-
-#endif
