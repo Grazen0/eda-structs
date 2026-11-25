@@ -26,6 +26,7 @@ sources = [
   'src/persistent_stack.cpp',
   'src/persistent_trie.cpp',
   'src/quick_heap.cpp',
+  'src/x_fast_trie.cpp',
 ]
 
 inc_dirs = include_directories('include')
